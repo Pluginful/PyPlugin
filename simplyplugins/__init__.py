@@ -28,17 +28,24 @@ PRINT_WARNINGS=1
 PRINT_TO_FUNCTION=2
 """将警告传递给自定义函数"""
 
-
 warningsPrint=PRINT_WARNINGS
 """警告打印配置，默认PRINT_WARNINGS"""
 
-warningsPrintFunction: Callable[[str, Exception], None] = None  # 添加类型提示
-"""用于自定义警告处理的函数，需接受两个参数：警告信息(str)和异常对象(Exception)"""
+warningsPrintFunction: Callable[[str, Exception, Warning], None] = None
+"""用于自定义警告处理的函数，需要两个参数："""
+
+
+permissionMsgbox: Callable[[str, str], bool] = None
+"""用于自定义权限请求的函数，需接受两个参数："""
 
 # ===========================函数===========================
-def pluginDir(dir:str):
+pluginDir=""
+"""插件目录，如果要修改插件目录请使用init()函数而不是修改这个变量"""
+
+def init(dir:str):
     """初始化Simply Plugins插件目录，可以重复调用来重置插件列表"""
-    global plugins, pluginMetas
+    global plugins, pluginMetas, pluginDir
+    pluginDir=dir
     plugins=[]
     pluginMetas={}
 
@@ -105,10 +112,11 @@ def pluginDir(dir:str):
             elif warningsPrint == PRINT_TO_FUNCTION:
                 if not callable(warningsPrintFunction):  # 添加运行时检查
                     raise exc.LibraryConfigError("warningsPrintFunction 必须是一个可调用的函数")
-                warningsPrintFunction(f" {name} 插件有异常，跳过！", e)
+                warningsPrintFunction(name, e, exc.Init_PluginLoadWarning)
             elif warningsPrint == PRINT_NOTHING: 
                 pass
             
     plugins=modules
-plugindir=pluginDir
 
+def calcDependencies(plugins:list):
+    """计算这组插件的依赖，并返回一个依赖树"""
